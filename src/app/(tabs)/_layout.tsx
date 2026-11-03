@@ -26,7 +26,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          headerTitle: 'Fintrack',
+          headerTitle: 'BudT',
           tabBarIcon: tabIcon('home'),
           headerRight: () => <HeaderButton icon="settings-outline" label="Settings" onPress={() => router.push('/settings')} />,
         }}

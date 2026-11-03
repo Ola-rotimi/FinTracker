@@ -1,42 +1,54 @@
 import { useColorScheme } from 'react-native';
 
+/** Brand colours taken from the BudT app icon. */
+export const BRAND = {
+  gradientStart: '#0F766E',
+  gradientEnd: '#064E3B',
+  amber: '#FBBF24',
+};
+
 const light = {
-  bg: '#F4F6FA',
+  bg: '#F3F7F6',
   card: '#FFFFFF',
-  text: '#111827',
-  muted: '#6B7280',
-  border: '#E5E7EB',
-  inputBg: '#F9FAFB',
-  primary: '#4F46E5',
-  primarySoft: '#EEF2FF',
+  text: '#0F1F1C',
+  muted: '#5F6F6B',
+  border: '#DDE7E4',
+  inputBg: '#F7FAF9',
+  primary: '#0F766E',
+  primarySoft: '#DDF3EE',
   onPrimary: '#FFFFFF',
+  accent: '#D97706',
   income: '#059669',
   expense: '#DC2626',
   warning: '#D97706',
-  track: '#E5E7EB',
+  track: '#E3ECE9',
 };
 
 export type Theme = typeof light;
 
 const dark: Theme = {
-  bg: '#0B0F17',
-  card: '#151B26',
-  text: '#F3F4F6',
-  muted: '#9CA3AF',
-  border: '#263041',
-  inputBg: '#1C2431',
-  primary: '#818CF8',
-  primarySoft: '#1E1B4B',
-  onPrimary: '#0B0F17',
+  bg: '#08110F',
+  card: '#111C1A',
+  text: '#ECF5F3',
+  muted: '#93A6A1',
+  border: '#1F2E2B',
+  inputBg: '#16231F',
+  primary: '#2DD4BF',
+  primarySoft: '#123B36',
+  onPrimary: '#04201C',
+  accent: '#FBBF24',
   income: '#34D399',
   expense: '#F87171',
   warning: '#FBBF24',
-  track: '#263041',
+  track: '#1F2E2B',
 };
 
+/** Follows the app's colour scheme, which the user can pin to light or dark in Settings. */
 export function useTheme(): Theme {
   return useColorScheme() === 'dark' ? dark : light;
 }
+
+export type ThemePreference = 'system' | 'light' | 'dark';
 
 /** Palette offered when creating categories and goals. */
 export const SWATCHES = [

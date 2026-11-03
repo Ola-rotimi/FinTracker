@@ -1,20 +1,24 @@
 {
   "expo": {
-    "name": "Fintrack",
+    "name": "BudT",
     "slug": "fintrack",
-    "scheme": "fintrack",
+    "scheme": "budt",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fintrack.app"
+      "bundleIdentifier": "com.BudT.app",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.fintrack.app",
+      "package": "com.BudT.app",
+      "allowBackup": true,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0F766E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -29,7 +33,20 @@
       "expo-status-bar",
       "expo-sqlite",
       "@react-native-community/datetimepicker",
-      "expo-font"
+      "expo-font",
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "backgroundColor": "#F0FDFA",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#08110F"
+          }
+        }
+      ]
     ],
     "extra": {
       "router": {

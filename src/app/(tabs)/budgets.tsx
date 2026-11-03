@@ -44,7 +44,7 @@ export default function BudgetsScreen() {
           <EmptyState
             icon="pie-chart-outline"
             title="No budgets yet"
-            message="Set a monthly limit for categories like groceries or transport, and Fintrack will track how much is left."
+            message="Set a monthly limit for categories like groceries or transport, and BudT will track how much is left."
             action={{ label: 'Create a budget', onPress: () => openBudget() }}
           />
         </Card>

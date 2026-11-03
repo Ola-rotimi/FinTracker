@@ -1,8 +1,10 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Appearance } from 'react-native';
 import { getSetting, setSetting } from '@/db/queries';
 import { CUSTOM_COUNTRY, getCountry } from './countries';
 import { formatMajor, formatMoney } from './money';
+import type { ThemePreference } from './theme';
 
 type Settings = {
   currency: string;
@@ -16,20 +18,35 @@ type Settings = {
   /** Country whose rules the tax and pension calculators apply (or `CUSTOM_COUNTRY`). */
   calcCountry: string;
   setCalcCountry: (code: string) => Promise<void>;
+  theme: ThemePreference;
+  setTheme: (theme: ThemePreference) => Promise<void>;
+  /** Re-reads every setting from the database, e.g. after restoring a backup. */
+  reload: () => Promise<void>;
 };
 
-type Stored = { currency: string | null; country: string | null; calcCountry: string | null };
+type Stored = { currency: string | null; country: string | null; calcCountry: string | null; theme: string | null };
 
 const SettingsContext = createContext<Settings | null>(null);
+
+/** Pins the whole app (including native pickers and alerts) to light/dark, or follows the system. */
+function applyTheme(theme: string | null) {
+  Appearance.setColorScheme(theme === 'light' || theme === 'dark' ? theme : 'auto');
+}
+
+async function readAll(db: SQLiteDatabase): Promise<Stored> {
+  const [currency, country, calcCountry, theme] = await Promise.all(
+    ['currency', 'country', 'calcCountry', 'theme'].map((key) => getSetting(db, key)),
+  );
+  applyTheme(theme);
+  return { currency, country, calcCountry, theme };
+}
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const db = useSQLiteContext();
   const [stored, setStored] = useState<Stored>();
 
   useEffect(() => {
-    Promise.all([getSetting(db, 'currency'), getSetting(db, 'country'), getSetting(db, 'calcCountry')]).then(
-      ([currency, country, calcCountry]) => setStored({ currency, country, calcCountry }),
-    );
+    readAll(db).then(setStored);
   }, [db]);
 
   const update = useCallback(
@@ -55,8 +72,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       },
       calcCountry: stored.calcCountry ?? stored.country ?? CUSTOM_COUNTRY,
       setCalcCountry: (code) => update({ calcCountry: code }),
+      theme: stored.theme === 'light' || stored.theme === 'dark' ? stored.theme : 'system',
+      setTheme: (theme) => {
+        applyTheme(theme);
+        return update({ theme });
+      },
+      reload: () => readAll(db).then(setStored),
     };
-  }, [stored, update]);
+  }, [db, stored, update]);
 
   if (!value) return null;
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

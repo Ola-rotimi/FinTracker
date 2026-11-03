@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { TransactionRow, useBudgetColor } from '@/components/finance';
 import { AppText, Button, Card, EmptyState, ListRow, Loading, ProgressBar, Screen, SectionHeader } from '@/components/ui';
 import { allTimeTotals, budgetsWithSpending, listBills, listGoals, monthTotals, recentTransactions } from '@/db/queries';
@@ -8,7 +9,10 @@ import { useQuery } from '@/hooks/useQuery';
 import { currentMonthKey, dayLabel, daysBetween, daysInMonth, monthLabel, todayISO } from '@/lib/dates';
 import { formatPercent } from '@/lib/money';
 import { useMoney, useSettings } from '@/lib/settings';
-import { useTheme } from '@/lib/theme';
+import { BRAND, useTheme } from '@/lib/theme';
+
+/** Text on the brand-gradient hero card stays white in both light and dark mode. */
+const ON_HERO = '#FFFFFF';
 
 export default function HomeScreen() {
   const t = useTheme();
@@ -59,18 +63,28 @@ export default function HomeScreen() {
         </Card>
       )}
 
-      <View style={[styles.hero, { backgroundColor: t.primary }]}>
-        <AppText color={t.onPrimary} style={{ opacity: 0.85 }}>
+      <View style={styles.hero}>
+        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+          <Defs>
+            <LinearGradient id="hero" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor={BRAND.gradientStart} />
+              <Stop offset="1" stopColor={BRAND.gradientEnd} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#hero)" />
+          <Circle cx="92%" cy="0" r="120" fill="#FFFFFF" opacity={0.06} />
+        </Svg>
+        <AppText color={ON_HERO} style={{ opacity: 0.85 }}>
           {monthLabel(month)} · net
         </AppText>
-        <AppText variant="display" color={t.onPrimary} adjustsFontSizeToFit numberOfLines={1}>
+        <AppText variant="display" color={ON_HERO} adjustsFontSizeToFit numberOfLines={1}>
           {money(net, { sign: true })}
         </AppText>
         <View style={styles.heroRow}>
           <HeroStat icon="arrow-down" label="Income" value={money(totals.income)} />
           <HeroStat icon="arrow-up" label="Expenses" value={money(totals.expense)} />
         </View>
-        <AppText variant="caption" color={t.onPrimary} style={{ opacity: 0.8 }}>
+        <AppText variant="caption" color={ON_HERO} style={{ opacity: 0.8 }}>
           All-time balance {money(allTime.income - allTime.expense)}
         </AppText>
       </View>
@@ -176,17 +190,16 @@ export default function HomeScreen() {
 }
 
 function HeroStat({ icon, label, value }: { icon: 'arrow-down' | 'arrow-up'; label: string; value: string }) {
-  const t = useTheme();
   return (
     <View style={styles.heroStat}>
       <View style={styles.heroIcon}>
-        <Ionicons name={icon} size={16} color={t.onPrimary} />
+        <Ionicons name={icon} size={16} color={ON_HERO} />
       </View>
       <View style={{ flex: 1 }}>
-        <AppText variant="caption" color={t.onPrimary} style={{ opacity: 0.85 }}>
+        <AppText variant="caption" color={ON_HERO} style={{ opacity: 0.85 }}>
           {label}
         </AppText>
-        <AppText weight="700" color={t.onPrimary} numberOfLines={1} adjustsFontSizeToFit>
+        <AppText weight="700" color={ON_HERO} numberOfLines={1} adjustsFontSizeToFit>
           {value}
         </AppText>
       </View>
@@ -195,7 +208,7 @@ function HeroStat({ icon, label, value }: { icon: 'arrow-down' | 'arrow-up'; lab
 }
 
 const styles = StyleSheet.create({
-  hero: { borderRadius: 20, padding: 20, gap: 12 },
+  hero: { borderRadius: 20, padding: 20, gap: 12, overflow: 'hidden' },
   heroRow: { flexDirection: 'row', gap: 12 },
   heroStat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   heroIcon: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
