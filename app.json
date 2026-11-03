@@ -1,15 +1,18 @@
 {
   "expo": {
-    "name": "fintrack",
+    "name": "Fintrack",
     "slug": "fintrack",
+    "scheme": "fintrack",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fintrack.app"
     },
     "android": {
+      "package": "com.fintrack.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +23,24 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-sqlite",
+      "@react-native-community/datetimepicker",
+      "expo-font"
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "c87b2d99-2959-49fe-8377-58bbd5a5f982"
+      }
+    },
+    "owner": "ola-rotimis-team"
   }
 }
