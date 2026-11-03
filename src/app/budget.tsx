@@ -3,7 +3,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { CategoryPicker } from '@/components/pickers';
-import { AppText, Button, Field, Screen } from '@/components/ui';
+import { AppText, Button, Field, HeaderDeleteButton, Screen } from '@/components/ui';
 import { categoryTotals, deleteBudget, getBudget, setBudget } from '@/db/queries';
 import { currentMonthKey, shiftMonth } from '@/lib/dates';
 import { centsToInput, parseAmount } from '@/lib/money';
@@ -37,14 +37,22 @@ export default function BudgetScreen() {
     router.back();
   };
 
-  const remove = async () => {
-    await deleteBudget(db, categoryId!);
-    router.back();
-  };
+  const remove = () =>
+    Alert.alert('Remove this budget?', 'Your spending in this category is kept; only the monthly limit is removed.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteBudget(db, categoryId!);
+          router.back();
+        },
+      },
+    ]);
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: exists ? 'Edit budget' : 'New budget' }} />
+      <Stack.Screen options={{ title: exists ? 'Edit budget' : 'New budget', headerRight: exists ? () => <HeaderDeleteButton label="Remove budget" onPress={remove} /> : undefined }} />
       <View style={{ gap: 8 }}>
         <AppText variant="label">Category</AppText>
         <CategoryPicker type="expense" value={categoryId} onChange={setCategoryId} />
@@ -59,7 +67,6 @@ export default function BudgetScreen() {
         hint={lastMonth ? `You spent ${money(lastMonth)} on this last month.` : 'Budgets repeat every month.'}
       />
       <Button title="Save budget" icon="checkmark" onPress={save} />
-      {exists && <Button title="Remove budget" variant="danger" icon="trash-outline" onPress={remove} />}
     </Screen>
   );
 }

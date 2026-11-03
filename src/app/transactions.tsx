@@ -1,9 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { SectionList, StyleSheet, TextInput, View } from 'react-native';
 import { MonthSwitcher, TransactionRow } from '@/components/finance';
-import { AppText, EmptyState, Segmented } from '@/components/ui';
+import { AppText, EmptyState, HeaderButton, Segmented } from '@/components/ui';
 import { listTransactions, type TxRow } from '@/db/queries';
 import type { TxType } from '@/db/types';
 import { useQuery } from '@/hooks/useQuery';
@@ -55,6 +55,12 @@ export default function TransactionsScreen() {
       stickySectionHeadersEnabled={false}
       ListHeaderComponent={
         <View style={{ gap: 12, marginBottom: 8 }}>
+          <Stack.Screen
+            options={{
+              title: 'Activity',
+              headerRight: () => <HeaderButton icon="add" label="Add transaction" onPress={() => router.push('/transaction')} />,
+            }}
+          />
           <MonthSwitcher month={month} onChange={setMonth} />
           <View style={[styles.search, { backgroundColor: t.inputBg, borderColor: t.border }]}>
             <Ionicons name="search" size={18} color={t.muted} />

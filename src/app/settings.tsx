@@ -3,17 +3,17 @@ import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import { router, Stack } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import { AppText, Card, Divider, ListRow, Screen, Segmented } from '@/components/ui';
 import { exportTransactionsCsv, resetAllData } from '@/db/queries';
 import { BackupError, pickBackup, restoreBackup, shareBackup } from '@/lib/backup';
 import { getCountry } from '@/lib/countries';
 import { shortDate } from '@/lib/dates';
+import { PRIVACY_POLICY_URL } from '@/lib/links';
+import { usePro } from '@/lib/pro';
 import { CURRENCIES, formatMoney } from '@/lib/money';
 import { useSettings } from '@/lib/settings';
 import { useTheme, type ThemePreference } from '@/lib/theme';
-
-const PRIVACY_POLICY_URL = 'https://ola-rotimi.github.io/FinTracker/privacy-policy.html';
 
 const showError = (title: string, e: unknown) =>
   Alert.alert(title, e instanceof BackupError ? e.message : 'Something went wrong. Please try again.');
@@ -23,6 +23,16 @@ export default function SettingsScreen() {
   const db = useSQLiteContext();
   const { currency, currencyChosen, setCurrency, country, theme, setTheme, reload } = useSettings();
   const homeCountry = getCountry(country);
+  const pro = usePro();
+
+  const restorePro = async () => {
+    try {
+      const restored = await pro.restore();
+      Alert.alert(restored ? 'Purchases restored' : 'Nothing to restore', restored ? 'BudT Pro is active.' : 'No BudT Pro purchase was found for this store account.');
+    } catch {
+      Alert.alert('Restore failed', 'Couldn’t reach the store. Check your connection and try again.');
+    }
+  };
 
   const backup = async () => {
     try {
@@ -77,6 +87,39 @@ export default function SettingsScreen() {
   return (
     <Screen>
       <Stack.Screen options={{ title: 'Settings' }} />
+
+      <Card style={{ gap: 6 }}>
+        <ListRow
+          icon="sparkles"
+          iconColor={t.accent}
+          title={pro.isPro ? 'BudT Pro is active' : 'Upgrade to BudT Pro'}
+          subtitle={pro.isPro ? 'Thanks for supporting BudT' : 'Goals, bills, tax & pension, and every financial tool'}
+          onPress={() => router.push('/paywall')}
+        />
+        {pro.isPro && pro.managementUrl ? (
+          <>
+            <Divider />
+            <ListRow icon="card-outline" iconColor={t.primary} title="Manage subscription" onPress={() => Linking.openURL(pro.managementUrl!)} />
+          </>
+        ) : null}
+        {!pro.isPro && pro.available ? (
+          <>
+            <Divider />
+            <ListRow icon="refresh" iconColor={t.primary} title="Restore purchases" onPress={restorePro} chevron={false} />
+          </>
+        ) : null}
+        {__DEV__ && (
+          <>
+            <Divider />
+            <View style={styles.devRow}>
+              <AppText variant="caption" style={{ flex: 1 }}>
+                Developer: simulate Pro (development builds only)
+              </AppText>
+              <Switch value={pro.devOverride} onValueChange={pro.setDevOverride} trackColor={{ true: t.primary }} />
+            </View>
+          </>
+        )}
+      </Card>
 
       <Card style={{ gap: 6 }}>
         <Pressable
@@ -183,6 +226,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  devRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
   countryRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
   flag: { fontSize: 30 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

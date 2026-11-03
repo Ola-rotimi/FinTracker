@@ -3,10 +3,12 @@ import * as Linking from 'expo-linking';
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ProLock } from '@/components/ProLock';
 import { AppText, Button, Card, Divider, Field, Screen } from '@/components/ui';
 import { shortDate } from '@/lib/dates';
 import { crossRate, describeSource, formatRate, FX_CURRENCIES, useFxRates } from '@/lib/fx';
 import { CURRENCIES, formatMajor, parseNumber } from '@/lib/money';
+import { usePro } from '@/lib/pro';
 import { useSettings } from '@/lib/settings';
 import { useTheme } from '@/lib/theme';
 
@@ -20,7 +22,9 @@ export default function CurrencyConverter() {
   const [to, setTo] = useState(currency === 'USD' ? 'EUR' : 'USD');
   const [picking, setPicking] = useState<Side | null>(null);
 
-  const fx = useFxRates([from, to]);
+  const { isPro } = usePro();
+  // Only fetch rates once the converter is unlocked.
+  const fx = useFxRates(isPro ? [from, to] : []);
   const rate = crossRate(fx.quotes, from, to);
   const value = parseNumber(amount);
 
@@ -76,79 +80,89 @@ export default function CurrencyConverter() {
         )}
       </Card>
 
-      <Card>
-        {rate === null ? (
-          fx.loading ? (
-            <View style={styles.status}>
-              <ActivityIndicator color={t.primary} />
-              <AppText variant="caption">Fetching official rates…</AppText>
-            </View>
-          ) : (
-            <View style={styles.status}>
-              <Ionicons name="cloud-offline-outline" size={28} color={t.muted} />
-              <AppText style={{ textAlign: 'center' }}>Couldn’t load the official rate for {fx.failed.join(' and ')}.</AppText>
-              <AppText variant="caption" style={{ textAlign: 'center' }}>
-                Check your connection and try again. Rates are saved for offline use once loaded.
-              </AppText>
-              <Button title="Try again" icon="refresh" variant="secondary" onPress={fx.refresh} />
-            </View>
-          )
-        ) : (
-          <>
-            <AppText variant="label">
-              {formatMajor(value, from)} =
-            </AppText>
-            <AppText variant="display" color={t.primary} adjustsFontSizeToFit numberOfLines={1} selectable>
-              {formatMajor(value * rate, to)}
-            </AppText>
-            <Divider />
-            <AppText weight="600">
-              1 {from} = {formatRate(rate)} {to}
-            </AppText>
-            <AppText variant="caption">
-              1 {to} = {formatRate(1 / rate)} {from}
-            </AppText>
-            {fx.offline && (
-              <AppText variant="caption" color={t.warning}>
-                You’re offline, so the last saved official rates are shown.
-              </AppText>
-            )}
-            <Button title={fx.loading ? 'Refreshing…' : 'Refresh rates'} icon="refresh" variant="ghost" onPress={fx.refresh} disabled={fx.loading} />
-          </>
-        )}
-      </Card>
-
-      <Card style={{ gap: 10 }}>
-        <AppText variant="heading">Where these rates come from</AppText>
-        {[from, to].map((code) => {
-          const quote = fx.quotes[code];
-          const { label, note } = describeSource(code);
-          return (
-            <View key={code} style={styles.source}>
-              <Text style={{ fontSize: 22 }}>{FX_CURRENCIES[code]?.flag}</Text>
-              <View style={{ flex: 1, gap: 2 }}>
-                <AppText weight="600">
-                  {code} · {FX_CURRENCIES[code]?.name}
+      {isPro ? (
+        <>
+          <Card>
+            {rate === null ? (
+              fx.loading ? (
+                <View style={styles.status}>
+                  <ActivityIndicator color={t.primary} />
+                  <AppText variant="caption">Fetching official rates…</AppText>
+                </View>
+              ) : (
+                <View style={styles.status}>
+                  <Ionicons name="cloud-offline-outline" size={28} color={t.muted} />
+                  <AppText style={{ textAlign: 'center' }}>Couldn’t load the official rate for {fx.failed.join(' and ')}.</AppText>
+                  <AppText variant="caption" style={{ textAlign: 'center' }}>
+                    Check your connection and try again. Rates are saved for offline use once loaded.
+                  </AppText>
+                  <Button title="Try again" icon="refresh" variant="secondary" onPress={fx.refresh} />
+                </View>
+              )
+            ) : (
+              <>
+                <AppText variant="label">
+                  {formatMajor(value, from)} =
                 </AppText>
-                <AppText variant="caption">{label}</AppText>
-                {quote && code !== 'USD' && (
-                  <AppText variant="caption">
-                    1 USD = {formatRate(quote.perUsd)} {code} · published {shortDate(quote.date)}
+                <AppText variant="display" color={t.primary} adjustsFontSizeToFit numberOfLines={1} selectable>
+                  {formatMajor(value * rate, to)}
+                </AppText>
+                <Divider />
+                <AppText weight="600">
+                  1 {from} = {formatRate(rate)} {to}
+                </AppText>
+                <AppText variant="caption">
+                  1 {to} = {formatRate(1 / rate)} {from}
+                </AppText>
+                {fx.offline && (
+                  <AppText variant="caption" color={t.warning}>
+                    You’re offline, so the last saved official rates are shown.
                   </AppText>
                 )}
-                {note ? <AppText variant="caption">{note}</AppText> : null}
-                {quote?.sourceUrl ? (
-                  <Pressable onPress={() => Linking.openURL(quote.sourceUrl!)} hitSlop={6}>
-                    <AppText variant="caption" color={t.primary}>
-                      View the central bank’s page
+                <Button title={fx.loading ? 'Refreshing…' : 'Refresh rates'} icon="refresh" variant="ghost" onPress={fx.refresh} disabled={fx.loading} />
+              </>
+            )}
+          </Card>
+
+          <Card style={{ gap: 10 }}>
+            <AppText variant="heading">Where these rates come from</AppText>
+            {[from, to].map((code) => {
+              const quote = fx.quotes[code];
+              const { label, note } = describeSource(code);
+              return (
+                <View key={code} style={styles.source}>
+                  <Text style={{ fontSize: 22 }}>{FX_CURRENCIES[code]?.flag}</Text>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <AppText weight="600">
+                      {code} · {FX_CURRENCIES[code]?.name}
                     </AppText>
-                  </Pressable>
-                ) : null}
-              </View>
-            </View>
-          );
-        })}
-      </Card>
+                    <AppText variant="caption">{label}</AppText>
+                    {quote && code !== 'USD' && (
+                      <AppText variant="caption">
+                        1 USD = {formatRate(quote.perUsd)} {code} · published {shortDate(quote.date)}
+                      </AppText>
+                    )}
+                    {note ? <AppText variant="caption">{note}</AppText> : null}
+                    {quote?.sourceUrl ? (
+                      <Pressable onPress={() => Linking.openURL(quote.sourceUrl!)} hitSlop={6}>
+                        <AppText variant="caption" color={t.primary}>
+                          View the central bank’s page
+                        </AppText>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </View>
+              );
+            })}
+          </Card>
+
+        </>
+      ) : (
+        <ProLock
+          title="Convert at official rates"
+          message="BudT Pro converts between 37 currencies using each central bank’s official rate, with sources and dates."
+        />
+      )}
 
       <AppText variant="caption" style={{ textAlign: 'center', paddingHorizontal: 16 }}>
         Official central bank reference rates only. No parallel-market or bureau rates are used. Conversions between two non-USD currencies

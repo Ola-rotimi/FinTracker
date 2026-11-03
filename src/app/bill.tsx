@@ -4,16 +4,19 @@ import { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { DateField } from '@/components/DateField';
 import { CategoryPicker } from '@/components/pickers';
-import { AppText, Button, Field, Screen, Segmented } from '@/components/ui';
+import { AppText, Button, Field, HeaderDeleteButton, Screen, Segmented } from '@/components/ui';
 import { deleteBill, getBill, saveBill } from '@/db/queries';
 import { todayISO, type Frequency } from '@/lib/dates';
 import { centsToInput, parseAmount } from '@/lib/money';
 import { useSettings } from '@/lib/settings';
+import { ProScreen } from '@/components/ProLock';
+import { usePro } from '@/lib/pro';
 
 export default function BillScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const id = params.id ? Number(params.id) : undefined;
   const db = useSQLiteContext();
+  const { isPro } = usePro();
   const { currency } = useSettings();
 
   const [name, setName] = useState('');
@@ -56,9 +59,11 @@ export default function BillScreen() {
       },
     ]);
 
+
+  if (!isPro) return <ProScreen screenTitle="Bills & subscriptions" title="Never miss a bill" message="BudT Pro tracks rent, utilities and subscriptions, warns you before they’re due and records payments in one tap. Any bills you’ve already added are kept." />;
   return (
     <Screen>
-      <Stack.Screen options={{ title: id ? 'Edit bill' : 'New bill' }} />
+      <Stack.Screen options={{ title: id ? 'Edit bill' : 'New bill', headerRight: id ? () => <HeaderDeleteButton label="Delete bill" onPress={remove} /> : undefined }} />
       <Field label="Name" value={name} onChangeText={setName} placeholder="e.g. Rent, Netflix, Electricity" autoFocus={!id} />
       <Field label="Amount" prefix={currency} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" />
       <View style={{ gap: 8 }}>
@@ -80,7 +85,6 @@ export default function BillScreen() {
         <CategoryPicker type="expense" value={categoryId} onChange={setCategoryId} />
       </View>
       <Button title={id ? 'Save changes' : 'Add bill'} icon="checkmark" onPress={save} />
-      {id ? <Button title="Delete bill" variant="danger" icon="trash-outline" onPress={remove} /> : null}
     </Screen>
   );
 }

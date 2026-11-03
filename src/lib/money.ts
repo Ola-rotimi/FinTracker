@@ -59,6 +59,22 @@ export function parseNumber(text: string, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+/**
+ * Formats numeric input as it's typed: adds thousands commas, keeps one decimal point and drops
+ * anything else. A comma typed at the end is treated as a decimal point, for keypads whose
+ * decimal key is ",". Pass the previously displayed text as `previous` so this can tell.
+ */
+export function groupDigits(text: string, previous = '') {
+  let raw = text;
+  if (raw.endsWith(',') && raw.slice(0, -1) === previous && !previous.includes('.')) raw = `${previous}.`;
+  raw = raw.replace(/[^\d.]/g, '');
+  const dot = raw.indexOf('.');
+  const whole = (dot === -1 ? raw : raw.slice(0, dot)).replace(/^0+(?=\d)/, '');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (dot === -1) return grouped;
+  return `${grouped || '0'}.${raw.slice(dot + 1).replace(/\./g, '')}`;
+}
+
 export function centsToInput(cents: number) {
   return (cents / 100).toFixed(2).replace(/\.00$/, '');
 }

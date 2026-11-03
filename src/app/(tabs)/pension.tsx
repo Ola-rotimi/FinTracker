@@ -1,4 +1,3 @@
-import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { BarChart } from '@/components/charts';
@@ -6,8 +5,10 @@ import { CountryBanner, PresetNotes } from '@/components/CountryBanner';
 import { AppText, Card, Divider, Field, Screen, StatLine } from '@/components/ui';
 import { getCountry, type CountryPreset } from '@/lib/countries';
 import { projectPension, type PensionInput } from '@/lib/finance';
+import { ProLock } from '@/components/ProLock';
 import { useConversion } from '@/lib/fx';
 import { formatMajor, parseNumber } from '@/lib/money';
+import { usePro } from '@/lib/pro';
 import { useMoney, useSettings } from '@/lib/settings';
 import { useTheme } from '@/lib/theme';
 
@@ -43,7 +44,9 @@ function PensionForm({ preset }: { preset?: CountryPreset }) {
   const t = useTheme();
   const { currency, major } = useMoney(preset?.currency);
   const { currency: homeCurrency } = useSettings();
-  const conversion = useConversion(currency, homeCurrency);
+  const { isPro } = usePro();
+  // Skip fetching rates while the results are locked.
+  const conversion = useConversion(currency, isPro ? homeCurrency : currency);
   const [inputs, setInputs] = useState<Inputs>(() => defaultsFor(preset));
 
   const num = Object.fromEntries(Object.entries(inputs).map(([k, v]) => [k, parseNumber(v)])) as PensionInput;
@@ -67,7 +70,6 @@ function PensionForm({ preset }: { preset?: CountryPreset }) {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: 'Pension planner' }} />
       <CountryBanner preset={preset} subtitle={preset ? `${preset.pension.scheme} · ${preset.currency}` : undefined} />
 
       <Card>
@@ -111,52 +113,62 @@ function PensionForm({ preset }: { preset?: CountryPreset }) {
         })}
       </Card>
 
-      <Card>
-        <AppText variant="label">Pot at age {num.currentAge + r.years}</AppText>
-        <AppText variant="display" color={t.primary} adjustsFontSizeToFit numberOfLines={1}>
-          {major(r.pot)}
-        </AppText>
-        <AppText variant="caption">Worth {major(r.potReal)} in today’s money</AppText>
-        {conversion.rate !== null && currency !== homeCurrency && (
-          <AppText variant="caption" color={t.primary}>
-            ≈ {formatMajor(r.potReal * conversion.rate, homeCurrency)} in {homeCurrency} today, at official central bank rates
-          </AppText>
-        )}
-        <Divider />
-        <StatLine label="Estimated retirement income" value={`${major(r.monthlyIncomeReal)}/month`} color={t.income} bold />
-        <AppText variant="caption">In today’s money, withdrawing {inputs.withdrawalPct}% of the pot a year.</AppText>
-        <Divider />
-        <StatLine label="Starting pot" value={major(num.currentPot)} />
-        <StatLine label="Your contributions" value={major(r.employeeTotal)} />
-        <StatLine label="Employer contributions" value={major(r.employerTotal)} />
-        {r.extraTotal > 0 && <StatLine label="Extra top-ups" value={major(r.extraTotal)} />}
-        <StatLine label="Investment growth" value={major(r.growth)} color={t.income} />
-      </Card>
+      {isPro ? (
+        <>
+          <Card>
+            <AppText variant="label">Pot at age {num.currentAge + r.years}</AppText>
+            <AppText variant="display" color={t.primary} adjustsFontSizeToFit numberOfLines={1}>
+              {major(r.pot)}
+            </AppText>
+            <AppText variant="caption">Worth {major(r.potReal)} in today’s money</AppText>
+            {conversion.rate !== null && currency !== homeCurrency && (
+              <AppText variant="caption" color={t.primary}>
+                ≈ {formatMajor(r.potReal * conversion.rate, homeCurrency)} in {homeCurrency} today, at official central bank rates
+              </AppText>
+            )}
+            <Divider />
+            <StatLine label="Estimated retirement income" value={`${major(r.monthlyIncomeReal)}/month`} color={t.income} bold />
+            <AppText variant="caption">In today’s money, withdrawing {inputs.withdrawalPct}% of the pot a year.</AppText>
+            <Divider />
+            <StatLine label="Starting pot" value={major(num.currentPot)} />
+            <StatLine label="Your contributions" value={major(r.employeeTotal)} />
+            <StatLine label="Employer contributions" value={major(r.employerTotal)} />
+            {r.extraTotal > 0 && <StatLine label="Extra top-ups" value={major(r.extraTotal)} />}
+            <StatLine label="Investment growth" value={major(r.growth)} color={t.income} />
+          </Card>
 
-      {num.targetMonthlyIncome > 0 && (
-        <Card style={{ borderColor: onTrack ? t.income : t.warning, borderWidth: 1 }}>
-          <AppText variant="heading" color={onTrack ? t.income : t.warning}>
-            {onTrack ? 'You’re on track' : 'You may fall short'}
-          </AppText>
-          <StatLine label="Pot needed (today’s money)" value={major(r.requiredPotReal)} />
-          {!onTrack && (
-            <>
-              <StatLine label="Shortfall (today’s money)" value={major(r.shortfallReal)} color={t.expense} />
-              <StatLine label="Extra needed each month" value={major(r.extraMonthlyNeeded)} bold />
-            </>
+          {num.targetMonthlyIncome > 0 && (
+            <Card style={{ borderColor: onTrack ? t.income : t.warning, borderWidth: 1 }}>
+              <AppText variant="heading" color={onTrack ? t.income : t.warning}>
+                {onTrack ? 'You’re on track' : 'You may fall short'}
+              </AppText>
+              <StatLine label="Pot needed (today’s money)" value={major(r.requiredPotReal)} />
+              {!onTrack && (
+                <>
+                  <StatLine label="Shortfall (today’s money)" value={major(r.shortfallReal)} color={t.expense} />
+                  <StatLine label="Extra needed each month" value={major(r.extraMonthlyNeeded)} bold />
+                </>
+              )}
+            </Card>
           )}
-        </Card>
-      )}
 
-      {points.length > 1 && (
-        <Card>
-          <AppText variant="heading">Pot by age</AppText>
-          <BarChart
-            labels={points.map((p) => String(p.age))}
-            series={[{ color: t.primary, values: points.map((p) => p.pot) }]}
-            formatValue={(v) => major(v, true)}
-          />
-        </Card>
+          {points.length > 1 && (
+            <Card>
+              <AppText variant="heading">Pot by age</AppText>
+              <BarChart
+                labels={points.map((p) => String(p.age))}
+                series={[{ color: t.primary, values: points.map((p) => p.pot) }]}
+                formatValue={(v) => major(v, true)}
+              />
+            </Card>
+          )}
+
+        </>
+      ) : (
+        <ProLock
+          title="See your retirement projection"
+          message={`BudT Pro projects your pension pot and retirement income${preset ? ` under ${preset.pension.scheme}` : ''}, and shows whether you’re on track.`}
+        />
       )}
 
       <PresetNotes

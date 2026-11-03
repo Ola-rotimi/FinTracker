@@ -3,7 +3,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { ColorPicker, IconPicker } from '@/components/pickers';
-import { AppText, Button, Field, IconBadge, Screen, Segmented } from '@/components/ui';
+import { AppText, Button, Field, HeaderDeleteButton, IconBadge, Screen, Segmented } from '@/components/ui';
 import { archiveCategory, getCategory, saveCategory } from '@/db/queries';
 import type { IconName, TxType } from '@/db/types';
 
@@ -49,7 +49,7 @@ export default function CategoryScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: id ? 'Edit category' : 'New category' }} />
+      <Stack.Screen options={{ title: id ? 'Edit category' : 'New category', headerRight: id ? () => <HeaderDeleteButton label="Archive category" icon="archive-outline" onPress={archive} /> : undefined }} />
       <View style={{ alignItems: 'center', gap: 8 }}>
         <IconBadge icon={icon} color={color} size={64} />
         <AppText variant="heading">{name || 'Category name'}</AppText>
@@ -68,7 +68,6 @@ export default function CategoryScreen() {
       <ColorPicker value={color} onChange={setColor} />
       <IconPicker value={icon} color={color} onChange={setIcon} />
       <Button title={id ? 'Save changes' : 'Create category'} icon="checkmark" onPress={save} />
-      {id ? <Button title="Archive category" variant="danger" icon="archive-outline" onPress={archive} /> : null}
     </Screen>
   );
 }

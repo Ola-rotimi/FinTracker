@@ -1,3 +1,4 @@
+import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { BarChart, DonutChart, Legend } from '@/components/charts';
@@ -36,6 +37,7 @@ export default function InsightsScreen() {
 
   return (
     <Screen>
+      <Stack.Screen options={{ title: 'Insights' }} />
       <MonthSwitcher month={month} onChange={setMonth} />
 
       <View style={styles.grid}>

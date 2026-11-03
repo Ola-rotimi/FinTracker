@@ -8,6 +8,8 @@ import { daysBetween, shortDate, todayISO } from '@/lib/dates';
 import { formatPercent } from '@/lib/money';
 import { useMoney } from '@/lib/settings';
 import { useTheme } from '@/lib/theme';
+import { ProScreen } from '@/components/ProLock';
+import { usePro } from '@/lib/pro';
 
 const newGoal = () => router.push('/goal');
 
@@ -15,6 +17,9 @@ export default function GoalsScreen() {
   const { money } = useMoney();
   const goals = useQuery('goals', listGoals);
 
+  const { isPro } = usePro();
+
+  if (!isPro) return <ProScreen screenTitle="Savings goals" title="Save towards what matters" message="BudT Pro tracks savings goals with target dates and tells you how much to put aside each month. Any goals you’ve already created are kept." />;
   if (!goals) return <Loading />;
   const saved = goals.reduce((s, g) => s + g.saved, 0);
   const target = goals.reduce((s, g) => s + g.target, 0);

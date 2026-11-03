@@ -1,15 +1,18 @@
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { ProLock } from '@/components/ProLock';
 import { AppText, Card, Divider, Field, Screen, StatLine } from '@/components/ui';
 import { simulateLoan } from '@/lib/finance';
 import { parseNumber } from '@/lib/money';
+import { usePro } from '@/lib/pro';
 import { useMoney } from '@/lib/settings';
 import { useTheme } from '@/lib/theme';
 
 export default function LoanCalculator() {
   const t = useTheme();
   const { currency, major } = useMoney();
+  const { isPro } = usePro();
   const [principal, setPrincipal] = useState('200000');
   const [rate, setRate] = useState('5.5');
   const [years, setYears] = useState('25');
@@ -42,25 +45,31 @@ export default function LoanCalculator() {
         />
       </Card>
 
-      <Card>
-        <AppText variant="label">Monthly payment</AppText>
-        <AppText variant="display" color={t.primary} adjustsFontSizeToFit numberOfLines={1}>
-          {major(base.payment)}
-        </AppText>
-        <Divider />
-        <StatLine label="Total interest" value={major(base.totalInterest)} color={t.expense} />
-        <StatLine label="Total repaid" value={major(base.totalPaid)} />
-        <StatLine label="Interest share" value={base.totalPaid ? `${((base.totalInterest / base.totalPaid) * 100).toFixed(1)}%` : '—'} />
-      </Card>
+      {isPro ? (
+        <>
+          <Card>
+            <AppText variant="label">Monthly payment</AppText>
+            <AppText variant="display" color={t.primary} adjustsFontSizeToFit numberOfLines={1}>
+              {major(base.payment)}
+            </AppText>
+            <Divider />
+            <StatLine label="Total interest" value={major(base.totalInterest)} color={t.expense} />
+            <StatLine label="Total repaid" value={major(base.totalPaid)} />
+            <StatLine label="Interest share" value={base.totalPaid ? `${((base.totalInterest / base.totalPaid) * 100).toFixed(1)}%` : '—'} />
+          </Card>
 
-      {hasExtra && (
-        <Card>
-          <AppText variant="heading">With {major(parseNumber(extra))} extra a month</AppText>
-          <StatLine label="Paying" value={`${major(base.payment + parseNumber(extra))}/month`} />
-          <StatLine label="Paid off in" value={fmtMonths(withExtra.months)} />
-          <StatLine label="Time saved" value={fmtMonths(base.months - withExtra.months)} color={t.income} />
-          <StatLine label="Interest saved" value={major(base.totalInterest - withExtra.totalInterest)} color={t.income} bold />
-        </Card>
+          {hasExtra && (
+            <Card>
+              <AppText variant="heading">With {major(parseNumber(extra))} extra a month</AppText>
+              <StatLine label="Paying" value={`${major(base.payment + parseNumber(extra))}/month`} />
+              <StatLine label="Paid off in" value={fmtMonths(withExtra.months)} />
+              <StatLine label="Time saved" value={fmtMonths(base.months - withExtra.months)} color={t.income} />
+              <StatLine label="Interest saved" value={major(base.totalInterest - withExtra.totalInterest)} color={t.income} bold />
+            </Card>
+          )}
+        </>
+      ) : (
+        <ProLock title="See your repayments" message="BudT Pro works out your monthly payment, total interest, and how much time and interest overpaying saves." />
       )}
     </Screen>
   );

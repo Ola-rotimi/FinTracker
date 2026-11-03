@@ -10,8 +10,6 @@ const tabIcon = (name: IconName) =>
     return <Ionicons name={name} size={size} color={color as string} />;
   };
 
-const addTransaction = () => <HeaderButton icon="add" label="Add transaction" onPress={() => router.push('/transaction')} />;
-
 export default function TabLayout() {
   const t = useTheme();
   return (
@@ -31,7 +29,6 @@ export default function TabLayout() {
           headerRight: () => <HeaderButton icon="settings-outline" label="Settings" onPress={() => router.push('/settings')} />,
         }}
       />
-      <Tabs.Screen name="transactions" options={{ title: 'Activity', tabBarIcon: tabIcon('list'), headerRight: addTransaction }} />
       <Tabs.Screen
         name="budgets"
         options={{
@@ -40,7 +37,14 @@ export default function TabLayout() {
           headerRight: () => <HeaderButton icon="add" label="Add budget" onPress={() => router.push('/budget')} />,
         }}
       />
-      <Tabs.Screen name="insights" options={{ title: 'Insights', tabBarIcon: tabIcon('stats-chart') }} />
+      <Tabs.Screen
+        name="tax"
+        options={{ title: 'Tax', headerTitle: 'Tax calculator', tabBarIcon: tabIcon('calculator') }}
+      />
+      <Tabs.Screen
+        name="pension"
+        options={{ title: 'Pension', headerTitle: 'Pension planner', tabBarIcon: tabIcon('umbrella') }}
+      />
       <Tabs.Screen name="more" options={{ title: 'More', tabBarIcon: tabIcon('grid') }} />
     </Tabs>
   );

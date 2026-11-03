@@ -7,6 +7,8 @@ import { contributeToGoal, getGoal } from '@/db/queries';
 import { useQuery } from '@/hooks/useQuery';
 import { parseAmount } from '@/lib/money';
 import { useMoney } from '@/lib/settings';
+import { ProScreen } from '@/components/ProLock';
+import { usePro } from '@/lib/pro';
 
 type Mode = 'add' | 'withdraw';
 
@@ -18,6 +20,9 @@ export default function ContributeScreen() {
   const [mode, setMode] = useState<Mode>('add');
   const [amount, setAmount] = useState('');
 
+  const { isPro } = usePro();
+
+  if (!isPro) return <ProScreen screenTitle="Savings goals" title="Save towards what matters" message="BudT Pro tracks savings goals with target dates and tells you how much to put aside each month. Any goals you’ve already created are kept." />;
   if (!goal) return <Loading />;
 
   const save = async () => {

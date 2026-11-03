@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, View } from 'react-native';
 import { DonutChart, Legend } from '@/components/charts';
@@ -7,8 +6,10 @@ import { CountryBanner, PresetNotes } from '@/components/CountryBanner';
 import { AppText, Button, Card, Divider, Field, Screen, Segmented, StatLine } from '@/components/ui';
 import { getCountry, type CountryPreset } from '@/lib/countries';
 import { calculateTax, EXAMPLE_BRACKETS, type Contribution, type TaxBracket } from '@/lib/finance';
+import { ProLock } from '@/components/ProLock';
 import { useConversion } from '@/lib/fx';
 import { formatMajor, formatPercent, parseNumber } from '@/lib/money';
+import { usePro } from '@/lib/pro';
 import { useMoney, useSettings } from '@/lib/settings';
 import { useTheme } from '@/lib/theme';
 
@@ -29,7 +30,9 @@ function TaxForm({ preset }: { preset?: CountryPreset }) {
   const t = useTheme();
   const { currency, major } = useMoney(preset?.currency);
   const { currency: homeCurrency } = useSettings();
-  const conversion = useConversion(currency, homeCurrency);
+  const { isPro } = usePro();
+  // Skip fetching rates while the results are locked.
+  const conversion = useConversion(currency, isPro ? homeCurrency : currency);
   const tax = preset?.tax;
 
   const [period, setPeriod] = useState<Period>('month');
@@ -86,7 +89,6 @@ function TaxForm({ preset }: { preset?: CountryPreset }) {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: 'Tax calculator' }} />
       <CountryBanner preset={preset} subtitle={preset ? `${tax!.year} · ${preset.currency}` : undefined} />
 
       <Card>
@@ -213,60 +215,70 @@ function TaxForm({ preset }: { preset?: CountryPreset }) {
         )}
       </Card>
 
-      <Card>
-        <AppText variant="label">Take-home pay</AppText>
-        <AppText variant="display" color={t.income} adjustsFontSizeToFit numberOfLines={1}>
-          {major(result.netMonthly)}
-          <AppText variant="heading" color={t.muted}>
-            {' '}
-            /month
-          </AppText>
-        </AppText>
-        <AppText variant="caption">{major(result.netAnnual)} a year</AppText>
-        {conversion.rate !== null && currency !== homeCurrency && (
-          <AppText variant="caption" color={t.primary}>
-            ≈ {formatMajor(result.netMonthly * conversion.rate, homeCurrency)} a month in {homeCurrency} at official central bank rates
-          </AppText>
-        )}
-        {pieData.length > 1 && (
-          <>
-            <DonutChart data={pieData} size={160} thickness={20}>
-              <AppText variant="caption">You keep</AppText>
-              <AppText variant="heading">{formatPercent(gross ? result.netAnnual / gross : 0, 0)}</AppText>
-            </DonutChart>
-            <Legend items={pieData} />
-          </>
-        )}
-        <Divider />
-        <AppText variant="label">Per {periodLabel}</AppText>
-        <StatLine label="Gross pay" value={p(gross)} />
-        {result.expenses > 0 && <StatLine label={tax?.expenseLabel ?? 'Expense deduction'} value={`−${p(result.expenses)}`} />}
-        <StatLine label="Taxable income" value={p(result.taxable)} />
-        {result.creditsApplied > 0 && (
-          <StatLine label={summariseCredits(result.credits.map((c) => c.name))} value={`−${p(result.creditsApplied)}`} color={t.income} />
-        )}
-        {result.surcharge > 0 && <StatLine label={tax?.surchargeLabel ?? 'Surcharge'} value={p(result.surcharge)} color={t.expense} />}
-        <StatLine label="Income tax" value={p(result.incomeTax)} color={t.expense} />
-        {result.contributions.map((c) => (
-          <StatLine key={c.name} label={c.name} value={p(c.amount)} color={t.expense} />
-        ))}
-        <StatLine label="Total deductions" value={p(result.totalTax)} bold />
-        <Divider />
-        <StatLine label="Effective rate (tax + contributions)" value={formatPercent(result.effectiveRate)} />
-        <StatLine label="Marginal income tax rate" value={formatPercent(result.marginalRate, 1)} />
-        {result.usedAlternative && <AppText variant="caption">The standard-rate method gives a lower bill, so it is used.</AppText>}
-      </Card>
+      {isPro ? (
+        <>
+          <Card>
+            <AppText variant="label">Take-home pay</AppText>
+            <AppText variant="display" color={t.income} adjustsFontSizeToFit numberOfLines={1}>
+              {major(result.netMonthly)}
+              <AppText variant="heading" color={t.muted}>
+                {' '}
+                /month
+              </AppText>
+            </AppText>
+            <AppText variant="caption">{major(result.netAnnual)} a year</AppText>
+            {conversion.rate !== null && currency !== homeCurrency && (
+              <AppText variant="caption" color={t.primary}>
+                ≈ {formatMajor(result.netMonthly * conversion.rate, homeCurrency)} a month in {homeCurrency} at official central bank rates
+              </AppText>
+            )}
+            {pieData.length > 1 && (
+              <>
+                <DonutChart data={pieData} size={160} thickness={20}>
+                  <AppText variant="caption">You keep</AppText>
+                  <AppText variant="heading">{formatPercent(gross ? result.netAnnual / gross : 0, 0)}</AppText>
+                </DonutChart>
+                <Legend items={pieData} />
+              </>
+            )}
+            <Divider />
+            <AppText variant="label">Per {periodLabel}</AppText>
+            <StatLine label="Gross pay" value={p(gross)} />
+            {result.expenses > 0 && <StatLine label={tax?.expenseLabel ?? 'Expense deduction'} value={`−${p(result.expenses)}`} />}
+            <StatLine label="Taxable income" value={p(result.taxable)} />
+            {result.creditsApplied > 0 && (
+              <StatLine label={summariseCredits(result.credits.map((c) => c.name))} value={`−${p(result.creditsApplied)}`} color={t.income} />
+            )}
+            {result.surcharge > 0 && <StatLine label={tax?.surchargeLabel ?? 'Surcharge'} value={p(result.surcharge)} color={t.expense} />}
+            <StatLine label="Income tax" value={p(result.incomeTax)} color={t.expense} />
+            {result.contributions.map((c) => (
+              <StatLine key={c.name} label={c.name} value={p(c.amount)} color={t.expense} />
+            ))}
+            <StatLine label="Total deductions" value={p(result.totalTax)} bold />
+            <Divider />
+            <StatLine label="Effective rate (tax + contributions)" value={formatPercent(result.effectiveRate)} />
+            <StatLine label="Marginal income tax rate" value={formatPercent(result.marginalRate, 1)} />
+            {result.usedAlternative && <AppText variant="caption">The standard-rate method gives a lower bill, so it is used.</AppText>}
+          </Card>
 
-      <Card>
-        <AppText variant="heading">Income tax by band (per year)</AppText>
-        {result.breakdown.map((b, i) => (
-          <StatLine
-            key={i}
-            label={`${major(b.from, true)}${Number.isFinite(b.to) ? `–${major(b.to, true)}` : '+'} @ ${b.rate}%${b.rateTo !== undefined ? `→${b.rateTo}%` : ''}`}
-            value={major(b.tax)}
-          />
-        ))}
-      </Card>
+          <Card>
+            <AppText variant="heading">Income tax by band (per year)</AppText>
+            {result.breakdown.map((b, i) => (
+              <StatLine
+                key={i}
+                label={`${major(b.from, true)}${Number.isFinite(b.to) ? `–${major(b.to, true)}` : '+'} @ ${b.rate}%${b.rateTo !== undefined ? `→${b.rateTo}%` : ''}`}
+                value={major(b.tax)}
+              />
+            ))}
+          </Card>
+
+        </>
+      ) : (
+        <ProLock
+          title="See your take-home pay"
+          message={`BudT Pro works out income tax, payroll deductions and take-home pay${preset ? ` using ${preset.name}’s ${tax!.year} rules` : ''}.`}
+        />
+      )}
 
       <PresetNotes
         title="About these rules"

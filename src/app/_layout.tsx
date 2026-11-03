@@ -3,11 +3,12 @@ import { SQLiteProvider } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 import { DATABASE_NAME, migrateDbIfNeeded } from '@/db/schema';
+import { ProProvider } from '@/lib/pro';
 import { SettingsProvider } from '@/lib/settings';
 import { useTheme } from '@/lib/theme';
 
 /** Form screens presented as modals over the current screen. */
-const MODALS = ['transaction', 'budget', 'goal', 'contribute', 'bill', 'category', 'country'];
+const MODALS = ['transaction', 'budget', 'goal', 'contribute', 'bill', 'category', 'country', 'paywall'];
 
 export default function RootLayout() {
   const t = useTheme();
@@ -20,15 +21,17 @@ export default function RootLayout() {
   return (
     <SQLiteProvider databaseName={DATABASE_NAME} onInit={migrateDbIfNeeded}>
       <SettingsProvider>
-        <ThemeProvider value={navTheme}>
-          <StatusBar style="auto" />
-          <Stack screenOptions={{ headerShadowVisible: false, headerTintColor: t.primary, headerTitleStyle: { color: t.text } }}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Home' }} />
-            {MODALS.map((name) => (
-              <Stack.Screen key={name} name={name} options={{ presentation: 'modal' }} />
-            ))}
-          </Stack>
-        </ThemeProvider>
+        <ProProvider>
+          <ThemeProvider value={navTheme}>
+            <StatusBar style="auto" />
+            <Stack screenOptions={{ headerShadowVisible: false, headerTintColor: t.primary, headerTitleStyle: { color: t.text } }}>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Home' }} />
+              {MODALS.map((name) => (
+                <Stack.Screen key={name} name={name} options={{ presentation: 'modal' }} />
+              ))}
+            </Stack>
+          </ThemeProvider>
+        </ProProvider>
       </SettingsProvider>
     </SQLiteProvider>
   );

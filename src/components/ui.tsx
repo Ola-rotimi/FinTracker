@@ -14,6 +14,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import type { IconName } from '@/db/types';
+import { groupDigits } from '@/lib/money';
 import { useTheme } from '@/lib/theme';
 
 export function Screen({ children, contentStyle }: { children: ReactNode; contentStyle?: StyleProp<ViewStyle> }) {
@@ -107,23 +108,45 @@ export function Button({
   );
 }
 
-export function HeaderButton({ icon, onPress, label }: { icon: IconName; onPress: () => void; label: string }) {
+export function HeaderButton({ icon, onPress, label, color }: { icon: IconName; onPress: () => void; label: string; color?: string }) {
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} accessibilityLabel={label} hitSlop={10} style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}>
-      <Ionicons name={icon} size={24} color={t.primary} />
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={10}
+      style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}>
+      <Ionicons name={icon} size={22} color={color ?? t.primary} />
     </Pressable>
   );
 }
 
+/** Small red delete/archive action for the top-right of edit screens. */
+export function HeaderDeleteButton({ onPress, label, icon = 'trash-outline' }: { onPress: () => void; label: string; icon?: IconName }) {
+  const t = useTheme();
+  return <HeaderButton icon={icon} label={label} color={t.expense} onPress={onPress} />;
+}
+
+const NUMERIC_KEYBOARDS = new Set(['decimal-pad', 'number-pad', 'numeric']);
+
+/** Text field. Numeric keyboards get automatic thousands commas (parseNumber/parseAmount strip them). */
 export function Field({ label, hint, prefix, style, ...input }: TextInputProps & { label: string; hint?: string; prefix?: string }) {
   const t = useTheme();
+  const numeric = NUMERIC_KEYBOARDS.has(input.keyboardType ?? '');
+  const shown = numeric && input.value !== undefined ? groupDigits(input.value) : input.value;
   return (
     <View style={[styles.field, style as StyleProp<ViewStyle>]}>
       {label ? <AppText variant="label">{label}</AppText> : null}
       <View style={[styles.inputWrap, { backgroundColor: t.inputBg, borderColor: t.border }]}>
         {prefix ? <AppText color={t.muted}>{prefix}</AppText> : null}
-        <TextInput placeholderTextColor={t.muted} style={[styles.input, { color: t.text }]} {...input} />
+        <TextInput
+          placeholderTextColor={t.muted}
+          style={[styles.input, { color: t.text }]}
+          {...input}
+          value={shown}
+          onChangeText={numeric ? (text) => input.onChangeText?.(groupDigits(text, shown)) : input.onChangeText}
+        />
       </View>
       {hint ? <AppText variant="caption">{hint}</AppText> : null}
     </View>

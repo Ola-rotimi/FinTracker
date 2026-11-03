@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, TextInput, View } from 'react-native';
 import { DateField } from '@/components/DateField';
 import { CategoryPicker } from '@/components/pickers';
-import { AppText, Button, Field, Screen, Segmented } from '@/components/ui';
+import { AppText, Button, Field, HeaderDeleteButton, Screen, Segmented } from '@/components/ui';
 import { deleteTransaction, getTransaction, saveTransaction } from '@/db/queries';
 import type { TxType } from '@/db/types';
 import { todayISO } from '@/lib/dates';
-import { centsToInput, parseAmount } from '@/lib/money';
+import { centsToInput, groupDigits, parseAmount } from '@/lib/money';
 import { useSettings } from '@/lib/settings';
 import { useTheme } from '@/lib/theme';
 
@@ -67,7 +67,7 @@ export default function TransactionScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: id ? 'Edit transaction' : 'New transaction' }} />
+      <Stack.Screen options={{ title: id ? 'Edit transaction' : 'New transaction', headerRight: id ? () => <HeaderDeleteButton label="Delete transaction" onPress={remove} /> : undefined }} />
       <Segmented<TxType>
         value={type}
         onChange={changeType}
@@ -80,8 +80,8 @@ export default function TransactionScreen() {
       <View style={[styles.amountBox, { backgroundColor: t.card, borderColor: t.border }]}>
         <AppText variant="label">Amount ({currency})</AppText>
         <TextInput
-          value={amount}
-          onChangeText={setAmount}
+          value={groupDigits(amount)}
+          onChangeText={(text) => setAmount(groupDigits(text, groupDigits(amount)))}
           placeholder="0.00"
           placeholderTextColor={t.muted}
           keyboardType="decimal-pad"
@@ -100,7 +100,6 @@ export default function TransactionScreen() {
       <Field label="Note" value={note} onChangeText={setNote} placeholder="What was it for? (optional)" returnKeyType="done" />
 
       <Button title={id ? 'Save changes' : `Add ${type}`} icon="checkmark" onPress={save} />
-      {id ? <Button title="Delete" variant="danger" icon="trash-outline" onPress={remove} /> : null}
     </Screen>
   );
 }

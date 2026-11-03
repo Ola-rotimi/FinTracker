@@ -4,18 +4,21 @@ import { useEffect, useState } from 'react';
 import { Alert, Switch, View } from 'react-native';
 import { DateField } from '@/components/DateField';
 import { ColorPicker, IconPicker } from '@/components/pickers';
-import { AppText, Button, Field, Screen } from '@/components/ui';
+import { AppText, Button, Field, HeaderDeleteButton, Screen } from '@/components/ui';
 import { deleteGoal, getGoal, saveGoal } from '@/db/queries';
 import type { IconName } from '@/db/types';
 import { addDays, toISODate } from '@/lib/dates';
 import { centsToInput, parseAmount } from '@/lib/money';
 import { useSettings } from '@/lib/settings';
 import { useTheme } from '@/lib/theme';
+import { ProScreen } from '@/components/ProLock';
+import { usePro } from '@/lib/pro';
 
 export default function GoalScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const id = params.id ? Number(params.id) : undefined;
   const db = useSQLiteContext();
+  const { isPro } = usePro();
   const t = useTheme();
   const { currency } = useSettings();
 
@@ -62,9 +65,11 @@ export default function GoalScreen() {
       },
     ]);
 
+
+  if (!isPro) return <ProScreen screenTitle="Savings goals" title="Save towards what matters" message="BudT Pro tracks savings goals with target dates and tells you how much to put aside each month. Any goals you’ve already created are kept." />;
   return (
     <Screen>
-      <Stack.Screen options={{ title: id ? 'Edit goal' : 'New goal' }} />
+      <Stack.Screen options={{ title: id ? 'Edit goal' : 'New goal', headerRight: id ? () => <HeaderDeleteButton label="Delete goal" onPress={remove} /> : undefined }} />
       <Field label="Name" value={name} onChangeText={setName} placeholder="e.g. Emergency fund" autoFocus={!id} />
       <Field label="Target" prefix={currency} value={target} onChangeText={setTarget} keyboardType="decimal-pad" placeholder="0.00" />
       <Field label="Already saved" prefix={currency} value={saved} onChangeText={setSaved} keyboardType="decimal-pad" placeholder="0.00" />
@@ -83,7 +88,6 @@ export default function GoalScreen() {
       <ColorPicker value={color} onChange={setColor} />
 
       <Button title={id ? 'Save changes' : 'Create goal'} icon="checkmark" onPress={save} />
-      {id ? <Button title="Delete goal" variant="danger" icon="trash-outline" onPress={remove} /> : null}
     </Screen>
   );
 }
